@@ -1082,4 +1082,5 @@ setmetatable(exports, {
     end,
 })
 
-return { fun = exports }
+return exports
+-- return { fun = exports } -- MAD
