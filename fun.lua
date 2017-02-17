@@ -1033,7 +1033,7 @@ local operator = {
     end,
     mod = function(a, b) return a % b end,
     mul = function(a, b) return a * b end,
-    neq = function(a) return -a end,
+    neg = function(a) return -a end,
     unm = function(a) return -a end, -- an alias
     pow = function(a, b) return a ^ b end,
     sub = function(a, b) return a - b end,
