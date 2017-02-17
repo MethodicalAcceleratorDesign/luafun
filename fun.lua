@@ -127,7 +127,7 @@ local map_gen = function(tab, key)
 end
 
 local rawiter = function(obj, param, state)
-    assert(obj ~= nil, "invalid iterator")
+    assert(type(obj) ~= nil, "invalid iterator")
     if type(obj) == "function" then
         return obj, param, state
     elseif type(obj) == "string" then
