@@ -13,36 +13,6 @@ local methods = {}
 local unpack = rawget(table, "unpack") or unpack
 
 --------------------------------------------------------------------------------
--- MAD extensions
---------------------------------------------------------------------------------
-
-local ffi = require 'ffi'
-
-assert(ffi.miscmap, "missing MAD extension (no cdata metatable access)")
-
-local function get_metatable (a)
-    return type(a) == 'cdata' and ffi.miscmap[ -tonumber(ffi.typeof(a)) ]
-        or getmetatable(a)
-end
-
-local function get_metamethod (a, f)
-    local mt = get_metatable(a)
-    return mt and rawget(mt,f)
-end
-
-local function has_metamethod (a, f)
-    return not not get_metamethod(a,f)
-end
-
-local function had_length(a)
-    return has_metamethod(a, '__len')
-end
-
-local function is_indexable(a)
-    return has_metamethod(a, '__index')
-end
-
---------------------------------------------------------------------------------
 -- Tools
 --------------------------------------------------------------------------------
 
@@ -120,23 +90,16 @@ end
 local ipairs_gen = ipairs({}) -- get the generating function from ipairs
 
 local pairs_gen = pairs({ a = 0 }) -- get the generating function from pairs
-
 local map_gen = function(tab, key)
+    local value
     local key, value = pairs_gen(tab, key)
     return key, key, value
 end
 
 local rawiter = function(obj, param, state)
     assert(obj ~= nil, "invalid iterator")
-    if type(obj) == "function" then
-        return obj, param, state
-    elseif type(obj) == "string" then
-        if #obj == 0 then
-            return nil_gen, nil, nil
-        end
-        return string_gen, obj, 0
-    else -- MAD
-        local mt = get_metatable(obj);
+    if type(obj) == "table" then
+        local mt = getmetatable(obj);
         if mt ~= nil then
             if mt == iterator_mt then
                 return obj.gen, obj.param, obj.state
@@ -146,15 +109,20 @@ local rawiter = function(obj, param, state)
                 return mt.__pairs(obj)
             end
         end
-        if type(obj) == "table" then
-          if #obj > 0 then
-              -- array
-              return ipairs(obj)
-          else
-              -- hash
-              return map_gen, obj, nil
-          end
+        if #obj > 0 then
+            -- array
+            return ipairs(obj)
+        else
+            -- hash
+            return map_gen, obj, nil
         end
+    elseif (type(obj) == "function") then
+        return obj, param, state
+    elseif (type(obj) == "string") then
+        if #obj == 0 then
+            return nil_gen, nil, nil
+        end
+        return string_gen, obj, 0
     end
     error(string.format('object %s of type "%s" is not iterable',
           obj, type(obj)))
@@ -330,7 +298,7 @@ exports.rands = rands
 local nth = function(n, gen_x, param_x, state_x)
     assert(n > 0, "invalid first argument to nth")
     -- An optimization for arrays and strings
-    if gen_x == ipairs_gen or is_indexable(param_x) then -- MAD
+    if gen_x == ipairs_gen then
         return param_x[n]
     elseif gen_x == string_gen then
         if n <= #param_x then
@@ -630,7 +598,7 @@ methods.reduce = methods.foldl
 exports.reduce = exports.foldl
 
 local length = function(gen, param, state)
-    if gen == ipairs_gen or gen == string_gen or has_length(param) then -- MAD
+    if gen == ipairs_gen or gen == string_gen then
         return #param
     end
     local len = 0
@@ -1087,4 +1055,4 @@ setmetatable(exports, {
     end,
 })
 
-return { fun = exports }
+return exports
