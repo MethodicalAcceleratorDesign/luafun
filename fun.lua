@@ -135,7 +135,7 @@ local rawiter = function(obj, param, state)
         if mt ~= nil then
             if mt == iterator_mt then
                 return obj.gen, obj.param, obj.state
-            elseif mt.__ipairs ~= nil then
+            elseif mt.__ipairs ~= nil and #obj > 0 then
                 return mt.__ipairs(obj)
             elseif mt.__kpairs ~= nil then
                 return mt.__kpairs(obj)
